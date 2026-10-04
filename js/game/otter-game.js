@@ -11,7 +11,7 @@ import { teleportMove } from './tunnels.js';
 export const FOOD_POINTS = { coffee: 10, github: 25 };
 export const FOOD_TYPES = Object.keys(FOOD_POINTS);
 export const EAT_TICKS = 2;
-const START_LENGTH = 3;
+const START_LENGTH = 4;
 
 function occupiedKeys(game, ignoreFood = null) {
   const keys = new Set(game.body.map(tileKey));

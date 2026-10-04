@@ -77,12 +77,37 @@ export function createOtterView(scene, radius, camera, initialSlideMs) {
   const group = new THREE.Group();
   scene.add(group);
 
-  const segmentGeometry = new THREE.SphereGeometry(1, 16, 12);
-  const bodyMaterial = new THREE.MeshStandardMaterial({ color: BODY_COLOR });
-  const headMaterial = new THREE.MeshStandardMaterial({ color: OTTER_VISUALS.moving.color });
+  const textureLoader = new THREE.TextureLoader();
+  const headTexture = textureLoader.load('/assets/Head normal.png');
+  const headEatingTexture = textureLoader.load('/assets/Head Eating.png');
+  const headDeadTexture = textureLoader.load('/assets/Head dead.png');
+  const bodyTexture = textureLoader.load('/assets/Body main.png');
+  const bodyAccentTexture = textureLoader.load('/assets/Body Add.png');
+  const feetTexture = textureLoader.load('/assets/Feet.png');
+
+  function createTexturedMaterial(texture) {
+    return new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.08,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+    });
+  }
+
+  const headMaterial = createTexturedMaterial(headTexture);
+  const eatingHeadMaterial = createTexturedMaterial(headEatingTexture);
+  const deadHeadMaterial = createTexturedMaterial(headDeadTexture);
+  const bodyMaterial = createTexturedMaterial(bodyTexture);
+  const accentMaterial = createTexturedMaterial(bodyAccentTexture);
+  const feetMaterial = createTexturedMaterial(feetTexture);
+
+  const segmentGeometry = new THREE.BoxGeometry(1, 1, 1);
   const head = new THREE.Mesh(segmentGeometry, headMaterial);
-  const nose = new THREE.Mesh(segmentGeometry, new THREE.MeshStandardMaterial({ color: NOSE_COLOR }));
-  group.add(head, nose);
+  const feet = new THREE.Mesh(segmentGeometry, feetMaterial);
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), new THREE.MeshStandardMaterial({ color: NOSE_COLOR }));
+  group.add(head, feet, nose);
   const segments = [];
   const foodSprites = {};
   const foodGeometry = new THREE.PlaneGeometry(1, 1);
@@ -141,20 +166,30 @@ export function createOtterView(scene, radius, camera, initialSlideMs) {
 
     headPosition.copy(shown[0]).multiplyScalar(radius * 1.02);
     head.position.copy(headPosition);
-    head.scale.setScalar(cellSize * 0.45 * visual.scale);
-    headMaterial.color.set(visual.color);
+    head.scale.setScalar(cellSize * 0.52 * visual.scale);
+    head.material = game.status === 'dead' ? deadHeadMaterial : game.status === 'eating' ? eatingHeadMaterial : headMaterial;
+    head.quaternion.copy(camera.quaternion);
 
     wantedHeading.set(...game.dir);
     heading.lerp(wantedHeading, 0.25);
     heading.addScaledVector(shown[0], -heading.dot(shown[0])).normalize();
+    feet.position.copy(headPosition).multiplyScalar(0.96);
+    feet.scale.setScalar(cellSize * 0.25);
+    feet.quaternion.copy(camera.quaternion);
     nose.position.copy(headPosition).addScaledVector(heading, cellSize * 0.42 * visual.scale);
     nose.scale.setScalar(cellSize * 0.12);
+    nose.quaternion.copy(camera.quaternion);
 
     shown.slice(1).forEach((direction, index) => {
       const segment = segmentAt(index);
       segment.visible = true;
       segment.position.copy(direction).multiplyScalar(radius * 1.02);
-      segment.scale.setScalar(cellSize * 0.38);
+      segment.scale.setScalar(cellSize * 0.44);
+      segment.quaternion.copy(camera.quaternion);
+
+      const isTail = index === shown.length - 2;
+      const isBody = index === 1 || index === shown.length - 3;
+      segment.material = isTail ? feetMaterial : isBody ? bodyMaterial : accentMaterial;
     });
     for (let index = shown.length - 1; index < segments.length; index += 1) {
       segments[index].visible = false;

@@ -9,6 +9,7 @@ import {
 import { teleportMove } from './tunnels.js';
 
 export const FOOD_POINTS = { coffee: 10, github: 25 };
+export const FOOD_GROWTH = { coffee: 1, github: 3 };
 export const FOOD_TYPES = Object.keys(FOOD_POINTS);
 export const EAT_TICKS = 2;
 const START_LENGTH = 4;
@@ -38,6 +39,7 @@ export function createGame(n = GRID_N, random = Math.random) {
     foods: [],
     score: 0,
     eatTicksLeft: 0,
+    growPending: 0,
     steps: 0,
   };
   FOOD_TYPES.forEach((type) => {
@@ -64,7 +66,8 @@ export function tick(game) {
   let { tile, dir } = step(head, game.dir, game.n);
   ({ tile, dir } = teleportMove(tile, dir, game.n));
   const eaten = game.foods.find((food) => food.tile && tileKey(food.tile) === tileKey(tile));
-  const blocking = eaten ? game.body : game.body.slice(0, -1);
+  const growing = Boolean(eaten) || game.growPending > 0;
+  const blocking = growing ? game.body : game.body.slice(0, -1);
   if (blocking.some((part) => tileKey(part) === tileKey(tile))) {
     game.status = 'dead';
     return game;
@@ -76,14 +79,19 @@ export function tick(game) {
 
   if (eaten) {
     game.score += FOOD_POINTS[eaten.type];
+    game.growPending += FOOD_GROWTH[eaten.type];
     game.status = 'eating';
     game.eatTicksLeft = EAT_TICKS;
     eaten.tile = randomFreeTile(occupiedKeys(game, eaten), game.n, game.random);
-    return game;
   }
 
-  game.body.pop();
-  if (game.status === 'eating') {
+  if (game.growPending > 0) {
+    game.growPending -= 1;
+  } else {
+    game.body.pop();
+  }
+
+  if (!eaten && game.status === 'eating') {
     game.eatTicksLeft -= 1;
     if (game.eatTicksLeft <= 0) {
       game.status = 'moving';

@@ -9,8 +9,10 @@ import { createGame, restart, tick, turn } from './js/game/otter-game.js';
 import { createFollowCamera, createOtterView } from './js/game/otter-renderer.js';
 import { watchOtterInput } from './js/game/input.js';
 import { createScoreHud } from './js/game/hud.js';
+import { createSpeedControl, levelToStepMs } from './js/game/speed-control.js';
 
-const STEP_MS = 160;
+const DEFAULT_SPEED_LEVEL = 7;
+let stepMs = levelToStepMs(DEFAULT_SPEED_LEVEL);
 
 const canvas = document.querySelector('#webglcanvas');
 const scene = new THREE.Scene();
@@ -25,31 +27,46 @@ watchRendererResize(renderer, camera);
 window.addEventListener('resize', () => resizePostProcessing(composer));
 
 let game = createGame();
-const otterView = createOtterView(scene, SPHERE_RADIUS, camera);
+const otterView = createOtterView(scene, SPHERE_RADIUS, camera, stepMs);
 controls.enabled = false;
 const followCamera = createFollowCamera(camera, otterView);
 const scoreHud = createScoreHud();
+createSpeedControl(DEFAULT_SPEED_LEVEL, (ms) => {
+  stepMs = ms;
+  otterView.setSlideMs(ms);
+});
 
-let holdingForward = false;
-let lastStep = 0;
+let lastStep = performance.now();
+let turnedThisStep = false;
+let queuedTurn = null;
+
+function requestTurn(side) {
+  if (turnedThisStep) {
+    queuedTurn = side;
+    return;
+  }
+  turn(game, side);
+  turnedThisStep = true;
+}
 
 function stepForward() {
   tick(game);
   lastStep = performance.now();
+  turnedThisStep = false;
+  if (queuedTurn) {
+    requestTurn(queuedTurn);
+    queuedTurn = null;
+  }
 }
 
 watchOtterInput({
-  onForwardStart: () => {
-    holdingForward = true;
-    stepForward();
-  },
-  onForwardStop: () => {
-    holdingForward = false;
-  },
-  onTurn: (side) => turn(game, side),
+  onTurn: requestTurn,
   onRestart: () => {
     if (game.status === 'dead') {
       game = restart(game);
+      lastStep = performance.now();
+      turnedThisStep = false;
+      queuedTurn = null;
     }
   },
 });
@@ -63,7 +80,7 @@ function renderMinimap() {
 }
 
 function updateOtter() {
-  if (holdingForward && performance.now() - lastStep >= STEP_MS) {
+  if (game.status !== 'dead' && performance.now() - lastStep >= stepMs) {
     stepForward();
   }
   otterView.update(game);

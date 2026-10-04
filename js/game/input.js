@@ -1,13 +1,11 @@
-const KEY_MOVES = {
-  w: 'forward',
-  arrowup: 'forward',
+const KEY_TURNS = {
   a: 'left',
   arrowleft: 'left',
   d: 'right',
   arrowright: 'right',
 };
 
-export function watchOtterInput({ onForwardStart, onForwardStop, onTurn, onRestart }) {
+export function watchOtterInput({ onTurn, onRestart }) {
   window.addEventListener('keydown', (event) => {
     const key = event.key.toLowerCase();
     if (key === 'r' || key === ' ') {
@@ -15,26 +13,13 @@ export function watchOtterInput({ onForwardStart, onForwardStop, onTurn, onResta
       onRestart();
       return;
     }
-    const move = KEY_MOVES[key];
-    if (!move) {
+    const side = KEY_TURNS[key];
+    if (!side) {
       return;
     }
     event.preventDefault();
-    if (event.repeat) {
-      return;
-    }
-    if (move === 'forward') {
-      onForwardStart();
-    } else {
-      onTurn(move);
+    if (!event.repeat) {
+      onTurn(side);
     }
   });
-
-  window.addEventListener('keyup', (event) => {
-    if (KEY_MOVES[event.key.toLowerCase()] === 'forward') {
-      onForwardStop();
-    }
-  });
-
-  window.addEventListener('blur', onForwardStop);
 }

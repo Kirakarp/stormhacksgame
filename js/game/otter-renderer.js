@@ -66,17 +66,14 @@ function createFoodMaterial(type) {
   return material;
 }
 
-export const SLIDE_MS = 140;
-
 const NOSE_COLOR = 0x1a1a1a;
-
-const easeInOut = (t) => t * t * (3 - 2 * t);
 
 function tileDirection(tile, n) {
   return new THREE.Vector3(...tileToCube(tile, n)).normalize();
 }
 
-export function createOtterView(scene, radius, camera) {
+export function createOtterView(scene, radius, camera, initialSlideMs) {
+  let slideMs = initialSlideMs;
   const group = new THREE.Group();
   scene.add(group);
 
@@ -136,7 +133,7 @@ export function createOtterView(scene, radius, camera) {
       slideStart = now;
     }
 
-    const progress = easeInOut(Math.min(1, (now - slideStart) / SLIDE_MS));
+    const progress = Math.min(1, (now - slideStart) / slideMs);
     shown = targets.map((target, index) => from[index].clone().lerp(target, progress).normalize());
 
     const cellSize = ((Math.PI / 2) / game.n) * radius;
@@ -184,7 +181,11 @@ export function createOtterView(scene, radius, camera) {
     });
   }
 
-  return { update, headPosition, heading };
+  function setSlideMs(ms) {
+    slideMs = ms;
+  }
+
+  return { update, setSlideMs, headPosition, heading };
 }
 
 export function createFollowCamera(camera, target, distance = 5) {

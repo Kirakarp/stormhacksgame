@@ -53,9 +53,10 @@ export function watchRendererResize(renderer, camera) {
  * @param {THREE.Scene} scene - Main scene.
  * @param {THREE.Camera} camera - Main camera.
  * @param {Function} afterRender - Optional callback for overlay rendering.
+ * @param {{render: Function}|null} composer - Optional post-processing composer.
  * @returns {void}
  */
-export function startAnimation(renderer, controls, scene, camera, afterRender) {
+export function startAnimation(renderer, controls, scene, camera, afterRender, composer) {
   /**
    * Renders one main-scene frame and then the optional overlay pass.
    * @returns {void}
@@ -65,7 +66,11 @@ export function startAnimation(renderer, controls, scene, camera, afterRender) {
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
-    renderer.render(scene, camera);
+    if (composer) {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
     if (afterRender) {
       afterRender();
     }

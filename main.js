@@ -10,6 +10,8 @@ import { createFollowCamera, createOtterView } from './js/game/otter-renderer.js
 import { watchOtterInput } from './js/game/input.js';
 import { createScoreHud } from './js/game/hud.js';
 import { createSpeedControl, levelToStepMs } from './js/game/speed-control.js';
+import { createTunnelSystems } from './js/game/tunnels.js';
+import { createHyperspace } from './js/assets/hyperspace.js';
 
 const DEFAULT_SPEED_LEVEL = 7;
 let stepMs = levelToStepMs(DEFAULT_SPEED_LEVEL);
@@ -23,6 +25,8 @@ const composer = createPostProcessing(renderer, scene, camera);
 
 setupEnvironment(scene);
 createSphere(scene);
+const hyperspace = createHyperspace(scene, camera);
+const tunnels = createTunnelSystems(scene, SPHERE_RADIUS, 8);
 watchRendererResize(renderer, camera);
 window.addEventListener('resize', () => resizePostProcessing(composer));
 
@@ -80,6 +84,8 @@ function renderMinimap() {
 }
 
 function updateOtter() {
+  hyperspace.update(performance.now());
+  tunnels.update(performance.now());
   if (game.status !== 'dead' && performance.now() - lastStep >= stepMs) {
     stepForward();
   }

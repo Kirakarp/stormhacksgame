@@ -44,6 +44,7 @@ export function createSphere(scene) {
         rimPower: { value: 2.8 },
         lightPosition: { value: new THREE.Vector3(4, 3, 5) },
         bandCount: { value: 6.0 },
+        landColor: { value: new THREE.Color(0x45c96b) },
       },
       vertexShader: cubeSphereVertexShader,
       fragmentShader: cubeSphereFragmentShader,

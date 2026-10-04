@@ -6,6 +6,7 @@ import {
   step,
   tileKey,
 } from './cube-grid.js';
+import { teleportMove } from './tunnels.js';
 
 export const FOOD_POINTS = { coffee: 10, github: 25 };
 export const FOOD_TYPES = Object.keys(FOOD_POINTS);
@@ -60,7 +61,8 @@ export function tick(game) {
   }
 
   const head = game.body[0];
-  const { tile, dir } = step(head, game.dir, game.n);
+  let { tile, dir } = step(head, game.dir, game.n);
+  ({ tile, dir } = teleportMove(tile, dir, game.n));
   const eaten = game.foods.find((food) => food.tile && tileKey(food.tile) === tileKey(tile));
   const blocking = eaten ? game.body : game.body.slice(0, -1);
   if (blocking.some((part) => tileKey(part) === tileKey(tile))) {
